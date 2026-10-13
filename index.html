@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Google Agenda</title>
+<meta name="description" content="Demonstração do painel de TV com planilha de processos e Google Agenda, com dados fictícios.">
+<link rel="icon" href="assets/logo-dark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --ceu:#E8F5F8;
+    --papel:#FFFFFF;
+    --turquesa:#23ABC4;
+    --turquesa-escuro:#0E6F81;
+    --turquesa-claro:#DDF2F7;
+    --tinta:#0D3440;
+    --tinta-2:#4E6E79;
+    --sol:#FFC857;
+    --sol-claro:#FFF1CC;
+    --coral:#FF7B6B;
+    --verde:#3DB48A;
+    --verde-claro:#DDF4EA;
+    --cinza:#A3B5BB;
+    --linha:#D3EAF0;
+    --raio:26px;
+  }
+  html{font-size:max(12px,.86vw)}
+  body{
+    margin:0;height:100vh;width:100vw;overflow:hidden;
+    background:var(--ceu);color:var(--tinta);
+    font-family:'Nunito Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    display:grid;grid-template-columns:15.5rem minmax(0,1fr);
+  }
+  .principal{min-width:0;min-height:0;height:100vh;display:grid;grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto minmax(0,1fr) auto;gap:.8rem;padding:1.2rem 2rem .8rem}
+
+  /* Menu lateral (sempre escuro, como no modelo) */
+  .menu{background:#0A171C;color:#DCEBEF;border-right:1px solid #17313A;display:flex;flex-direction:column;padding:1.4rem 1rem 1rem;gap:1.4rem;min-height:0}
+  .menu{transition:padding .3s ease}
+  body{transition:grid-template-columns .3s ease, background-color .6s ease, color .6s ease}
+  .menu-logo{padding:0 .5rem;display:flex;align-items:center;gap:.5rem;min-width:0}
+  .menu-logo img{height:3rem;width:auto;max-width:calc(100% - 2.6rem);display:block;object-fit:cover;object-position:left center}
+  .recolher{margin-left:auto;flex-shrink:0;width:2.2rem;height:2.2rem;border-radius:10px;border:1px solid #17313A;background:#12262E;color:#BFE9F2;
+    font:inherit;font-size:1.5rem;font-weight:800;line-height:1;cursor:pointer;display:grid;place-items:center}
+  .recolher:hover{background:#1A3540}
+  .recolher:focus-visible{outline:3px solid var(--turquesa);outline-offset:2px}
+  /* Menu recolhido: só os ícones */
+  body.menu-recolhido{grid-template-columns:5.2rem minmax(0,1fr)}
+  body.menu-recolhido .menu{padding:1.2rem .6rem 1rem}
+  body.menu-recolhido .menu-logo{flex-direction:column;padding:0;gap:.8rem}
+  body.menu-recolhido .menu-logo img{width:3rem;height:3rem;max-width:none}
+  body.menu-recolhido .recolher{margin:0;transform:rotate(180deg)}
+  body.menu-recolhido .menu-logo .logo-txt{display:none}
+  body.menu-recolhido .mi{grid-template-columns:1fr;justify-items:center;padding:.7rem .3rem}
+  body.menu-recolhido .mi > span:nth-child(2),body.menu-recolhido .mi-sub{display:none}
+  body.menu-recolhido .mi .bar{margin-top:.5rem;width:100%}
+  body.menu-recolhido .menu-prox{padding:.6rem .3rem;text-align:center;font-size:0}
+  body.menu-recolhido .menu-prox b{font-size:1rem}
+  .menu-logo .logo-txt{font-size:1.9rem}
+  .menu-nav{display:flex;flex-direction:column;gap:.35rem}
+  .mi{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:.85rem;width:100%;text-align:left;
+      background:none;border:0;color:inherit;font:inherit;padding:.8rem .9rem;border-radius:14px;cursor:pointer}
+  .mi:hover{background:#12262E}
+  .mi:focus-visible{outline:3px solid var(--turquesa);outline-offset:2px}
+  .mi .ic{width:2.4rem;height:2.4rem;border-radius:11px;display:grid;place-items:center;background:#12262E;color:#8BD9E8;font-size:1.25rem}
+  .mi b{display:block;font-family:'Baloo 2',sans-serif;font-size:1.35rem;font-weight:800;line-height:1.1}
+  .mi small{display:block;font-size:.85rem;font-weight:600;color:#86A4AE;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mi .bar{grid-column:1/-1;height:.3rem;border-radius:9px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:.7rem;display:none}
+  .mi .bar i{display:block;height:100%;width:0;background:#fff;border-radius:9px;transition:width .5s linear}
+  .mi.on{background:var(--turquesa);color:#fff}
+  .mi.on .ic{background:rgba(255,255,255,.2);color:#fff}
+  .mi.on small{color:rgba(255,255,255,.85)}
+  .mi.on .bar{display:block}
+  .mi-sub{display:flex;flex-direction:column;gap:.1rem;padding:.3rem 0 .5rem 1.6rem;margin-left:1.3rem;border-left:2px solid #17313A}
+  .mi-sub button{background:none;border:0;color:#86A4AE;font:inherit;font-weight:700;font-size:1rem;text-align:left;padding:.35rem .7rem;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:.55rem}
+  .mi-sub button i{width:.5rem;height:.5rem;border-radius:50%;background:#2A4955;flex-shrink:0}
+  .mi-sub button:hover{color:#DCEBEF}
+  .mi-sub button.on{color:#fff;background:#12262E}
+  .mi-sub button.on i{background:var(--sol)}
+  .mi-sub button.vazia{opacity:.5}
+  .menu-prox{margin-top:auto;background:#12262E;border-radius:14px;padding:.85rem 1rem;font-size:.95rem;font-weight:600;color:#86A4AE;line-height:1.35}
+  .menu-prox b{display:block;color:#fff;font-size:1.15rem;font-weight:800;font-variant-numeric:tabular-nums}
+  body.secao-agenda .rota{display:none}
+  .principal > .topo{grid-row:1}
+  .principal > .rota{grid-row:2}
+  .principal > #palco{grid-row:3}
+  .principal > .rodape{grid-row:4}
+  body.secao-agenda .principal{row-gap:.8rem;grid-template-rows:auto 0 minmax(0,1fr) auto}
+  body.secao-agenda .principal > #palco{margin-top:-.8rem}
+
+  /* Cabeçalho */
+  .topo{display:flex;align-items:center;gap:2rem;min-width:0}
+  .logo{height:3.4rem;width:auto;display:block;flex-shrink:0}
+  .logo-txt{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:2.2rem;color:var(--turquesa);flex-shrink:0}
+  .titulo{flex:1;min-width:0}
+  .titulo h1{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:2.7rem;line-height:1;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .titulo p{margin:.3rem 0 0;color:var(--tinta-2);font-size:1.15rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .relogio{text-align:right;flex-shrink:0;padding-right:.2rem}
+  #hora{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:3rem;line-height:1;color:var(--turquesa-escuro);font-variant-numeric:tabular-nums}
+  #data{color:var(--tinta-2);font-weight:600;font-size:1.05rem;white-space:nowrap}
+
+  /* Rota de voo (paradas clicáveis) */
+  .rota{position:relative;height:4.2rem;margin:0 2.5rem}
+  .trilho{position:absolute;left:0;right:0;top:1.2rem;border-top:3px dashed #9FD3DF}
+  .feito{position:absolute;left:0;top:calc(1.2rem - 3px);height:3px;width:0;background:var(--turquesa);transition:width .5s linear}
+  .parada{position:absolute;top:.6rem;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.4rem;
+          background:none;border:0;padding:0 .4rem .2rem;font:inherit;color:inherit;cursor:pointer;border-radius:10px}
+  .parada:focus-visible{outline:3px solid var(--turquesa);outline-offset:4px}
+  .parada i{width:1.25rem;height:1.25rem;border-radius:50%;background:var(--papel);border:3px solid #9FD3DF;transition:transform .2s}
+  .parada span{font-size:1.05rem;font-weight:700;color:var(--tinta-2);white-space:nowrap}
+  .parada:hover span{color:var(--turquesa-escuro)}
+  .parada:hover i{transform:scale(1.2)}
+  .parada.passou i{background:var(--turquesa);border-color:var(--turquesa)}
+  .parada.ativa i{background:var(--sol);border-color:var(--sol);transform:scale(1.25)}
+  .parada.ativa span{color:var(--tinta);font-weight:800}
+  .parada.vazia span{opacity:.55}
+  .parada.fim{cursor:default;pointer-events:none}
+  .aviao{position:absolute;top:-.15rem;left:0;width:2.8rem;height:2.8rem;transform:translateX(-50%);transition:left .5s linear;color:var(--turquesa-escuro);z-index:2;pointer-events:none}
+  .aviao svg{width:100%;height:100%;transform:rotate(90deg);filter:drop-shadow(0 3px 0 rgba(13,52,64,.12))}
+  .sem-trans .aviao,.sem-trans .feito{transition:none}
+
+  /* Palco */
+  #palco{min-height:0;min-width:0;position:relative;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#9FD3DF transparent}
+  #palco::-webkit-scrollbar{width:10px}
+  #palco::-webkit-scrollbar-thumb{background:#9FD3DF;border-radius:9px}
+  .resumo{transform-origin:top left}
+  .entra{animation:entra .7s ease both}
+  @keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* Status (pílulas) */
+  .st{display:inline-flex;align-items:center;gap:.45rem;padding:.12rem .75rem;border-radius:999px;font-weight:800;font-size:1rem;white-space:nowrap}
+  .st::before{content:"";width:.6rem;height:.6rem;border-radius:50%;background:currentColor}
+  .st-turquesa{background:var(--turquesa-claro);color:var(--turquesa-escuro)}
+  .st-sol{background:var(--sol-claro);color:#8A6200}
+  .st-verde{background:var(--verde-claro);color:#1F7A5A}
+  .st-coral{background:#FFE4E0;color:#B0473A}
+  .st-cinza{background:#EEF2F3;color:#6E858C}
+  .ponto{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;margin-right:.35rem;vertical-align:middle}
+  .p-turquesa{background:var(--turquesa)} .p-sol{background:var(--sol)} .p-verde{background:var(--verde)}
+  .p-coral{background:var(--coral)} .p-cinza{background:var(--cinza)}
+
+  /* Tabelas dos grupos */
+  .tabela-wrap{height:100%;background:var(--papel);border-radius:var(--raio);padding:.9rem 1.4rem .7rem;overflow:hidden;display:flex;flex-direction:column}
+  .faixa-status{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:0 .65rem .7rem;border-bottom:2px solid var(--linha)}
+  .faixa-status strong{font-family:'Baloo 2',sans-serif;font-size:1.35rem;font-weight:800;margin-right:.4rem}
+  .faixa-status .st{font-size:1.05rem}
+  .faixa-status .st b{font-family:'Baloo 2',sans-serif;font-size:1.25rem;line-height:1}
+  .tabela{width:100%;border-collapse:collapse;font-size:1.28rem}
+  .tabela th{text-align:left;font-size:.98rem;font-weight:800;color:var(--tinta-2);padding:.75rem .6rem;border-bottom:2px solid var(--linha);white-space:nowrap}
+  .tabela td{padding:.55rem .6rem;border-bottom:1px solid #EAF5F8;white-space:nowrap;max-width:16rem;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+  .tabela tbody tr:nth-child(even){background:#F6FBFC}
+  .tabela .col-qtd,.tabela .col-simnao,.c-qtd,.c-simnao{text-align:center}
+  .c-processo{font-weight:800}
+  .c-qtd{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:1.5rem;line-height:1}
+  .falta{margin:.7rem .6rem 0;color:#B0573F;font-weight:600;font-size:1rem}
+
+  .chip{display:inline-flex;align-items:center;gap:.5rem;padding:.18rem .8rem;border-radius:999px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--turquesa-claro);color:var(--turquesa-escuro);white-space:nowrap}
+  .chip b{font-weight:800;font-size:.8em}
+  .chip-hoje{background:var(--coral);color:#fff}
+  .chip-breve{background:var(--sol);color:var(--tinta)}
+  .chip-passado{background:#EEF2F3;color:#7D9299}
+  .chip-prev{background:transparent;border:2px solid var(--turquesa);color:var(--turquesa-escuro);padding:.08rem .75rem}
+  .chip-prev.atrasado{border-color:#F3B2A8;color:#B0573F}
+  .chip-sem{background:transparent;border:2px dashed #B6D8E0;color:var(--tinta-2);padding:.08rem .75rem}
+  .sn{display:inline-block;min-width:3.6rem;padding:.1rem .7rem;border-radius:999px;font-weight:800;font-size:1.02rem}
+  .sn-sim{background:var(--turquesa);color:#fff}
+  .sn-nao{color:#8EA6AD;border:2px solid #DCEAEE}
+  .tag{display:inline-block;padding:.1rem .65rem;border-radius:8px;background:#EFF4F5;font-weight:700;font-size:1.02rem;white-space:nowrap}
+  .bicho{font-size:1.1em;margin-right:.45rem}
+  .vazio{color:#A9BDC3}
+
+  /* ===== Resumo ===== */
+  .resumo{min-height:100%;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);grid-template-rows:auto 1fr;gap:1rem;transform-origin:top left}
+  .resumo .bloco{overflow:visible}
+  .rotulo-painel{font-size:.95rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.85;margin-bottom:.7rem}
+  .rotulo-painel em{font-style:normal;font-weight:600;letter-spacing:0;text-transform:none;margin-left:.4rem;opacity:.9}
+
+  .painel-ativos{background:var(--turquesa);color:#fff;border-radius:var(--raio);padding:1.2rem 1.8rem 1.1rem;position:relative;overflow:hidden}
+  .painel-ativos .patinha{position:absolute;right:-1.5rem;bottom:-2.8rem;width:11rem;height:11rem;color:rgba(255,255,255,.13)}
+  .painel-mes{background:var(--sol);border-radius:var(--raio);padding:1rem 1.4rem .9rem;align-self:start}
+  .painel-mes .kpis{gap:.8rem}
+  .painel-mes .kpi .r{font-size:1.2rem;margin-top:.2rem}
+  .painel-mes .kpi .s{font-size:.95rem}
+  .kpis{display:grid;gap:1.2rem;position:relative}
+  .kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .kpi{min-width:0}
+  .kpi .n{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:4.2rem;line-height:.9;font-variant-numeric:tabular-nums}
+  .painel-mes .kpi .n{font-size:2.9rem}
+  .kpi .r{font-size:1.2rem;font-weight:800;margin-top:.35rem}
+  .kpi .s{font-size:.95rem;font-weight:600;opacity:.88;margin-top:.1rem;line-height:1.25}
+  .linha-servicos{margin-top:.8rem;padding-top:.65rem;border-top:2px solid rgba(255,255,255,.3);font-size:1.05rem;font-weight:600;position:relative}
+  .linha-servicos b{font-weight:800}
+
+  .col-esq,.col-dir{display:flex;flex-direction:column;gap:1rem;min-height:0}
+  .bloco{background:var(--papel);border-radius:var(--raio);padding:1.1rem 1.5rem;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .bloco h2{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.55rem;margin:0 0 .35rem;line-height:1.1}
+  .bloco h2 small{font-family:'Nunito Sans',sans-serif;font-size:.95rem;font-weight:600;color:var(--tinta-2);margin-left:.6rem}
+  .bloco-tabela{flex:0 0 auto}
+  .col-esq .bloco:last-child{flex:1}
+
+  .mini{width:100%;border-collapse:collapse;font-size:1.3rem}
+  .mini th{text-align:right;font-size:.98rem;color:var(--tinta-2);font-weight:800;padding:.3rem .35rem;border-bottom:2px solid var(--linha);white-space:nowrap;vertical-align:bottom}
+  .mini th.grupo-col{text-align:center;border-bottom:2px solid var(--linha);color:var(--turquesa-escuro);font-size:1rem;padding-bottom:.25rem}
+  .mini th.grupo-col.st-grupo{color:#5B6F75}
+  .mini th:first-child,.mini td:first-child{text-align:left}
+  .mini td{text-align:right;padding:.42rem .35rem;border-bottom:1px solid #EAF5F8;font-variant-numeric:tabular-nums;font-weight:700}
+  .mini td:first-child{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.45rem;white-space:nowrap}
+  .mini .sep{border-left:2px solid var(--linha)}
+  .mini tbody tr{cursor:pointer}
+  .mini tbody tr:hover td{background:#EAF7FA}
+  .mini tfoot td{border-bottom:0;color:var(--turquesa-escuro);font-weight:800}
+
+  .prox-mes .prox-n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem 1rem;margin-top:.2rem}
+  .prox-n b{display:block;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:2.4rem;line-height:1;color:var(--turquesa-escuro);font-variant-numeric:tabular-nums}
+  .prox-n span{font-size:1.1rem;font-weight:700;color:var(--tinta-2)}
+  .prox-g{margin:.5rem 0 0;font-size:1rem;font-weight:600;color:var(--tinta-2)}
+  .prox-g b{color:var(--tinta)}
+
+  .ranking{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:column;grid-template-rows:repeat(4,auto);gap:.55rem 2.2rem;margin-top:.4rem}
+  .rk{display:grid;grid-template-columns:1.6rem minmax(0,11rem) minmax(0,1fr) auto;align-items:center;gap:.6rem;font-size:1.25rem}
+  .rk .pos{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--tinta-2);text-align:right}
+  .rk:first-child .pos{color:var(--turquesa-escuro)}
+  .rk .nome{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rk .barra{height:.85rem;border-radius:999px;background:#EAF5F8;overflow:hidden}
+  .rk .barra i{display:block;height:100%;border-radius:999px;background:var(--turquesa)}
+  .rk:first-child .barra i{background:var(--sol)}
+  .rk .qt{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.3rem;text-align:right;font-variant-numeric:tabular-nums}
+
+  .lista-bloco{flex:1}
+  .prox7{display:grid;gap:.7rem;margin:.4rem 0 .2rem;flex:1;align-content:center}
+  .prox7 div{background:var(--turquesa-claro);border-radius:18px;padding:.8rem 1rem;min-width:0}
+  .prox7 div.total{background:var(--tinta);color:#fff}
+  .prox7 b{display:block;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:3.2rem;line-height:1;font-variant-numeric:tabular-nums}
+  .prox7 span{display:block;font-size:1.15rem;margin-top:.2rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prox7 small{display:block;font-size:.95rem;font-weight:600;opacity:.8;white-space:nowrap}
+  .prox7 div.zero{opacity:.55}
+  .lista{display:flex;flex-direction:column}
+  .item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.7rem;padding:.4rem 0;border-bottom:1px solid #EAF5F8;font-size:1.05rem;flex-shrink:0}
+  .item .quem{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .quem b{font-weight:800}
+  .item .quem span{color:var(--tinta-2);font-weight:600}
+  .item .tag{font-size:.9rem}
+  .mais{margin-top:.2rem;font-weight:800;color:var(--turquesa-escuro);padding-top:.35rem}
+  .nada{color:var(--tinta-2);font-weight:600;font-size:1.1rem;margin-top:.4rem}
+
+  /* Mensagens */
+  .msg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;background:var(--papel);border-radius:var(--raio);text-align:center;padding:2rem}
+  .msg svg{width:6rem;height:6rem;color:var(--turquesa)}
+  .msg p{font-size:1.6rem;font-weight:700;max-width:40ch;margin:0}
+  .msg.erro p{color:#B0573F}
+
+  /* Rodapé */
+  .rodape{min-height:1.75rem;display:flex;justify-content:space-between;align-items:center;gap:2rem;font-size:1rem;color:var(--tinta-2);font-weight:600;min-width:0}
+  .rodape .erro{color:#B0573F}
+  .legenda{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap}
+  .legenda .sit{font-size:.85rem;padding:.1rem .6rem}
+  .legenda .chip{font-size:.85rem;padding:.05rem .6rem}
+  .paginas{display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+  .paginas .txt{margin-right:.4rem}
+  .paginas button{width:1.6rem;height:1.6rem;border:0;padding:0;background:none;cursor:pointer;border-radius:50%;display:grid;place-items:center}
+  .paginas button i{width:.85rem;height:.85rem;border-radius:50%;background:#C6E3EA;transition:transform .2s,background .2s}
+  .paginas button:hover i{transform:scale(1.3);background:#9FD3DF}
+  .paginas button.on i{background:var(--turquesa);transform:scale(1.15)}
+  .paginas button:focus-visible{outline:3px solid var(--turquesa);outline-offset:1px}
+  .parada.fim .pata-fim{width:1.5rem;height:1.5rem;color:#9FD3DF;margin-top:-.15rem}
+  .parada.fim.chegou .pata-fim{color:var(--turquesa)}
+
+
+  /* ===== Tema escuro (aba Agenda) ===== */
+  body.tema-escuro{
+    --ceu:#0A161B; --papel:#11222A; --tinta:#E6F2F5; --tinta-2:#8BA9B3;
+    --linha:#1E3741; --turquesa-claro:#123A45; --turquesa-escuro:#63D2E6;
+  }
+  body.tema-escuro .trilho{border-top-color:#2A4955}
+  body.tema-escuro .parada i{background:#11222A;border-color:#2A4955}
+  body.tema-escuro .parada.passou i{background:var(--turquesa);border-color:var(--turquesa)}
+  body.tema-escuro .parada.ativa i{background:var(--sol);border-color:var(--sol)}
+  body.tema-escuro .aviao{color:#63D2E6}
+
+  /* ===== Agenda ===== */
+  .ag{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,27rem);grid-template-rows:auto minmax(0,1fr);gap:1rem}
+  .ag-card{background:var(--papel);border:1px solid var(--linha);border-radius:20px;padding:1rem 1.25rem;min-width:0}
+  .ag-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
+  .ag-kpi{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:.9rem;align-items:center}
+  .ag-ico{width:3rem;height:3rem;border-radius:50%;display:grid;place-items:center;grid-row:span 2;font-size:1.35rem}
+  .ag-kpi .lb{font-size:1rem;font-weight:700;color:var(--tinta-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ag-kpi .n{font-family:'Baloo 2',sans-serif;font-size:2.5rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ag-kpi .s{grid-column:1/-1;font-size:.98rem;font-weight:600;color:var(--tinta-2);margin-top:.55rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ag-bar{grid-column:1/-1;height:.38rem;border-radius:9px;background:#1E3741;overflow:hidden;margin-top:.55rem}
+  .ag-bar i{display:block;height:100%;border-radius:9px}
+
+  .ag-dia{display:flex;flex-direction:column;overflow:hidden;padding:1.1rem 1.4rem .8rem}
+  .ag-topo{display:flex;align-items:center;gap:1rem;margin-bottom:.6rem}
+  .ag-topo .ico-cal{width:2.6rem;height:2.6rem;border-radius:12px;background:var(--turquesa-claro);color:var(--turquesa-escuro);display:grid;place-items:center;font-size:1.3rem}
+  .ag-topo h2{font-family:'Baloo 2',sans-serif;font-size:1.7rem;font-weight:800;margin:0;line-height:1}
+  .ag-topo p{margin:.2rem 0 0;color:var(--tinta-2);font-weight:600;font-size:1rem}
+  .ag-topo .cont{margin-left:auto;background:var(--turquesa);color:#fff;font-weight:800;border-radius:999px;padding:.35rem 1rem;font-size:1.05rem;white-space:nowrap}
+  .ag-tab{width:100%;border-collapse:collapse;font-size:1.25rem}
+  .ag-tab th{text-align:left;font-size:.95rem;font-weight:800;color:var(--tinta-2);padding:.6rem .7rem;border-bottom:1px solid var(--linha);white-space:nowrap}
+  .ag-tab td{padding:.62rem .7rem;border-bottom:1px solid #172D35;white-space:nowrap;vertical-align:middle}
+  .ag-tab td.hora{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:1.4rem;font-variant-numeric:tabular-nums;width:1%}
+  .ag-tab td.tit{max-width:0;width:100%}
+  .ag-tab .t1{display:flex;align-items:center;gap:.7rem;font-weight:800;overflow:hidden}
+  .ag-tab .t1 i{flex-shrink:0;width:.35rem;height:1.6rem;border-radius:4px;background:var(--c)}
+  .ag-tab .t1 span{overflow:hidden;text-overflow:ellipsis}
+  .ag-tab .loc{display:block;color:var(--tinta-2);font-size:.95rem;font-weight:600;margin-left:1.05rem;overflow:hidden;text-overflow:ellipsis}
+  .ag-tab tr.agora td{background:rgba(35,171,196,.12)}
+  .ag-tab tr.passado td{opacity:.5}
+  .cat{display:inline-flex;align-items:center;gap:.5rem;font-weight:700;font-size:1.1rem}
+  .cat i{width:.8rem;height:.8rem;border-radius:50%;background:var(--c);flex-shrink:0}
+  .sit{display:inline-block;padding:.18rem .8rem;border-radius:8px;font-weight:800;font-size:.98rem}
+  .sit-agora{background:var(--turquesa);color:#fff}
+  .sit-seguir{background:rgba(255,200,87,.16);color:#FFD27A}
+  .sit-feito{background:#1A2F37;color:#7F9CA6}
+  .sit-dia{background:rgba(121,134,203,.2);color:#B7C0F0}
+  .ag-vazio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;color:var(--tinta-2);font-weight:700;font-size:1.4rem;text-align:center}
+  .ag-vazio svg{width:5rem;height:5rem;color:#2A4955}
+  .ag-erro{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:#FF9C8F;font-weight:700;font-size:1.3rem;padding:2rem;line-height:1.4}
+
+  .ag-lado{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:1rem;min-height:0}
+  .ag-lado h3{font-family:'Baloo 2',sans-serif;font-size:1.35rem;font-weight:800;margin:0 0 .6rem;line-height:1}
+  .cal-grade{display:grid;grid-template-columns:repeat(7,1fr);gap:.15rem;text-align:center}
+  .cal-grade .ds{font-size:.85rem;font-weight:800;color:var(--tinta-2);padding-bottom:.3rem}
+  .cal-grade .d{position:relative;height:2.15rem;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:.3rem;font-weight:700;font-size:1.02rem;font-variant-numeric:tabular-nums}
+  .cal-grade .d.fora{color:#3D5862}
+  .cal-grade .d.hoje b{background:var(--turquesa);color:#fff;border-radius:50%;width:1.85rem;height:1.85rem;display:grid;place-items:center;margin-top:-.25rem}
+  .cal-grade .d .pts{display:flex;gap:.15rem;margin-top:.15rem;height:.4rem}
+  .cal-grade .d.hoje .pts{margin-top:.05rem}
+  .cal-grade .d .pts i{width:.38rem;height:.38rem;border-radius:50%;background:var(--c)}
+  .cores{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem 1.2rem}
+  .cores div{display:grid;grid-template-columns:auto minmax(0,1fr) auto;min-width:0;align-items:center;gap:.65rem;font-weight:700;font-size:1.05rem}
+  .cores span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cores i{width:.95rem;height:.95rem;border-radius:4px;background:var(--c)}
+  .cores b{font-family:'Baloo 2',sans-serif;font-size:1.2rem;font-variant-numeric:tabular-nums}
+  .ag-prox{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .prox-lista{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:.55rem}
+  .pi{display:grid;grid-template-columns:3.2rem minmax(0,1fr);gap:.8rem;align-items:center;flex-shrink:0}
+  .pi .dt{background:#0D1B21;border:1px solid var(--linha);border-left:4px solid var(--c);border-radius:10px;text-align:center;padding:.25rem 0;line-height:1}
+  .pi .dt b{display:block;font-family:'Baloo 2',sans-serif;font-size:1.35rem;font-weight:800}
+  .pi .dt span{font-size:.75rem;font-weight:800;color:var(--tinta-2);text-transform:uppercase}
+  .pi .tx{min-width:0}
+  .pi .tx strong{display:block;font-weight:800;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pi .tx span{display:block;font-size:.9rem;font-weight:600;color:var(--tinta-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ag-lado .mais{color:var(--turquesa-escuro)}
+
+  .ag-kpis{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)!important;gap:.8rem!important}
+  .ag-kpi{display:flex!important;flex-direction:column;align-items:stretch;padding:.85rem 1rem!important}
+  .kp-top{display:flex;align-items:center;gap:.55rem;min-width:0}
+  .kp-top .ag-ico{width:2rem;height:2rem;font-size:1rem;flex-shrink:0}
+  .kp-top .lb{font-size:.95rem;white-space:normal;line-height:1.15}
+  .ag-kpi .n{margin-top:.45rem}
+  .ag-kpi .s{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:.9rem!important;margin-top:.4rem!important;line-height:1.25}
+  .ag-kpi .ag-bar{margin-top:.5rem}
+  .ag-kpi .n.n-txt{font-size:1.45rem;line-height:1.15;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  button.ag-kpi{font:inherit;color:inherit;text-align:left;cursor:pointer}
+  button.ag-kpi:hover{border-color:#2F5662}
+  .ag-kpi.alerta .n{color:#FF9C8F}
+  .ag-kpi.ativo{border-color:#FF7B6B;box-shadow:inset 0 0 0 1px #FF7B6B}
+  .sit-pend{background:rgba(255,200,87,.18);color:#FFD27A}
+  .sit-atrasado{background:rgba(255,92,77,.2);color:#FF8A7D}
+  .sit-feito{background:rgba(61,180,138,.2)!important;color:#6FD8AE!important}
+  .ag-tab tr.passado td{opacity:.75}
+  .ag-tab tr.linha-atrasada td{background:rgba(255,92,77,.06)}
+  .ag-acoes{margin-left:auto;display:flex;align-items:center;gap:.7rem}
+  .ag-acoes .cont{margin-left:0}
+  .voltar,.limpar{background:#1A3540;color:#BFE9F2;border:1px solid #2A4955;border-radius:999px;font:inherit;font-weight:800;font-size:.95rem;padding:.35rem .9rem;cursor:pointer}
+  .voltar:hover,.limpar:hover{background:#21414D}
+  .filtrando{font-size:.95rem;font-weight:700;color:#FFD27A}
+  .ag-lado h3{display:flex;align-items:baseline;gap:.6rem}
+  .ag-lado h3 small{font-family:'Nunito Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--tinta-2);margin-left:auto}
+  .ag-lado h3 .limpar{margin-left:auto;font-size:.82rem;padding:.2rem .7rem}
+  .cal-grade button.d{background:none;border:0;color:inherit;font:inherit;font-weight:700;cursor:pointer;border-radius:10px}
+  .cal-grade button.d:hover{background:#17303A}
+  .cal-grade .d.sel{box-shadow:inset 0 0 0 2px var(--sol)}
+  .cores button{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.6rem;min-width:0;background:#0D1B21;border:1px solid var(--linha);
+    border-radius:10px;padding:.35rem .6rem;color:inherit;font:inherit;font-weight:700;font-size:1rem;cursor:pointer;text-align:left}
+  .cores button:hover{border-color:#2F5662}
+  .cores button.sel{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
+  .cores button.off{opacity:.38}
+
+  @media (prefers-reduced-motion:reduce){
+    .entra{animation:none}
+    .aviao,.feito,.parada i{transition:none}
+    body{transition:none}
+  }
+
+  /* Selo do modo demonstração */
+  .selo-demo{margin-top:auto;border:1px dashed #2A4955;border-radius:14px;padding:.6rem .9rem;font-size:.85rem;font-weight:600;color:#86A4AE;line-height:1.3}
+  .selo-demo b{display:block;color:#FFC857;font-size:.95rem}
+  .selo-demo + .menu-prox{margin-top:.6rem}
+  body.menu-recolhido .selo-demo{display:none}
+</style>
+</head>
+<body>
+  <aside class="menu" aria-label="Menu do painel">
+    <div class="menu-logo"><img id="logo" alt="Painel Google Agenda">
+      <button type="button" class="recolher" id="btnRecolher" title="Recolher menu" aria-label="Recolher menu">‹</button></div>
+    <nav class="menu-nav">
+      <button type="button" class="mi" data-secao="GRUPOS">
+        <span class="ic" aria-hidden="true">✈</span>
+        <span><b>Grupos</b><small>Resumo e serviços</small></span>
+        <span class="bar"><i id="barGRUPOS"></i></span>
+      </button>
+      <div class="mi-sub" id="menuSub"></div>
+      <button type="button" class="mi" data-secao="AGENDA">
+        <span class="ic" aria-hidden="true">📅</span>
+        <span><b>Agenda</b><small>Google Agenda</small></span>
+        <span class="bar"><i id="barAGENDA"></i></span>
+      </button>
+    </nav>
+    <div class="menu-prox" id="menuProx"></div>
+  </aside>
+
+  <div class="principal">
+  <header class="topo">
+    <div class="titulo">
+      <h1 id="tituloAba">Carregando…</h1>
+      <p id="subAba"></p>
+    </div>
+    <div class="relogio">
+      <div id="hora">--:--</div>
+      <div id="data"></div>
+    </div>
+  </header>
+
+  <nav class="rota" id="rota" aria-label="Abas do painel">
+    <div class="trilho"></div>
+    <div class="feito" id="feito"></div>
+    <div id="paradas"></div>
+    <div class="aviao" id="aviao" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+    </div>
+  </nav>
+
+  <main id="palco"></main>
+
+  <footer class="rodape">
+    <span id="status">Buscando os dados da planilha…</span>
+    <span class="legenda" id="legenda"></span>
+    <span class="paginas" id="paginas"></span>
+  </footer>
+  </div>
+
+<script src="demo/servidor-demo.js"></script>
+<script src="demo/dados-ficticios.js"></script>
+<script>
+const CFG = configCliente_();   // na demonstração, o CONFIG vem de demo/servidor-demo.js
+const DIA = 864e5;
+const $ = id => document.getElementById(id);
+const palco = $('palco');
+
+const PATA = '<svg viewBox="0 0 64 64" aria-hidden="true"><g fill="currentColor"><ellipse cx="32" cy="42" rx="14" ry="12"/><ellipse cx="14" cy="27" rx="6" ry="8"/><ellipse cx="25" cy="15" rx="6" ry="8.5"/><ellipse cx="39" cy="15" rx="6" ry="8.5"/><ellipse cx="50" cy="27" rx="6" ry="8"/></g></svg>';
+const MES_CURTO = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const SEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+
+let DADOS = null, NOVOS = null, iniciado = false, erroCarga = null, tentativa = null;
+let ABAS = [], slideIdx = 0, pagIdx = 0, totalPags = 1, durPag = CFG.tempoPorAbaSeg * 1000, inicioSlide = 0, porPagina = 10;
+
+/* ---------- utilitários ---------- */
+function esc(s){return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function norm(s){return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();}
+function dois(n){return String(n).padStart(2,'0');}
+function hoje0(){const d = new Date(); d.setHours(0,0,0,0); return d;}
+function difDias(iso){const b = new Date(iso); b.setHours(0,0,0,0); return Math.round((b - hoje0()) / DIA);}
+function fmtData(iso){const d = new Date(iso); return SEM[d.getDay()] + ' ' + dois(d.getDate()) + '/' + dois(d.getMonth()+1);}
+function fmtHora(d){d = new Date(d); return dois(d.getHours()) + ':' + dois(d.getMinutes());}
+function capFrase(s){s = String(s || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1);}
+function num(n){return (n == null ? 0 : n).toLocaleString('pt-BR');}
+function plural(n, um, varios){return num(n) + ' ' + (n === 1 ? um : varios);}
+function chaveMesAtual(){const d = new Date(); return d.getFullYear() + '-' + dois(d.getMonth() + 1);}
+const traco = '<span class="vazio">—</span>';
+
+/* "JÚLIA DE SOUZA / LUIZ" -> "Júlia de Souza / Luiz" */
+const PEQUENAS = ['de','da','do','das','dos','e','di','du'];
+function nomeProprio(s){
+  return String(s || '').toLowerCase().split(/(\s+|\/|-|\()/).map((p, i) => {
+    if (!p || /^(\s+|\/|-|\()$/.test(p)) return p;
+    if (i > 0 && PEQUENAS.indexOf(p) >= 0) return p;
+    if (/^(ii|iii|iv)$/.test(p)) return p.toUpperCase();
+    return p.charAt(0).toUpperCase() + p.slice(1);
+  }).join('');
+}
+
+/* Espécie em português: "2 DOG 1 CAT" -> "2 Cães, 1 Gato"; "DOG/CAT" -> "Cão e Gato" */
+const ESPECIES = {
+  DOG:['Cão','Cães'], DOGS:['Cão','Cães'], CAT:['Gato','Gatos'], CATS:['Gato','Gatos'],
+  BIRD:['Ave','Aves'], BIRDS:['Ave','Aves'], RABBIT:['Coelho','Coelhos'], RABBITS:['Coelho','Coelhos'],
+  FERRET:['Furão','Furões'], FERRETS:['Furão','Furões'], HAMSTER:['Hamster','Hamsters'], RAMISTER:['Hamster','Hamsters']
+};
+function especieTexto(t){
+  const partes = String(t || '').split(/\s*\/\s*/).filter(Boolean).map(parte => {
+    let tokens = parte.trim().split(/\s+/);
+    let exotico = false;
+    if (tokens.length > 1 && norm(tokens[0]) === 'EX') { exotico = true; tokens = tokens.slice(1).filter(x => x !== '-'); }
+    const saida = [];
+    let qtd = null;
+    tokens.forEach(tok => {
+      const k = norm(tok).replace(/[^A-Z0-9]/g, '');
+      if (/^\d+$/.test(k)) { if (saida.length && qtd === null) saida.push(','); qtd = +k; saida.push(k); return; }
+      const e = ESPECIES[k];
+      if (e) saida.push(qtd !== null && qtd > 1 ? e[1] : e[0]);
+      else saida.push(saida.length && PEQUENAS.indexOf(tok.toLowerCase()) >= 0 ? tok.toLowerCase() : nomeProprio(tok));
+      qtd = null;
+    });
+    return saida.join(' ').replace(/ ,/g, ',').replace(/ - /g, ' ') + (exotico ? ' (exótico)' : '');
+  });
+  if (partes.length <= 1) return partes[0] || '';
+  return partes.slice(0, -1).join(', ') + ' e ' + partes[partes.length - 1];
+}
+
+const BICHOS = [
+  [/\b(DOGS?|CAO|CAES|CANIN\w*|CACHORR\w*)\b/, '🐶'],
+  [/\b(CATS?|GAT\w*|FELIN\w*)\b/, '🐱'],
+  [/\b(BIRDS?|AVES?|PASSAR\w*|PAPAGAI\w*|CALOPSIT\w*|PERIQUIT\w*)\b/, '🐦'],
+  [/\b(RABBITS?|COELH\w*)\b/, '🐰'],
+  [/\b(HAMSTER\w*|RAMISTER\w*|ROEDOR\w*|PORQUINHO\w*|CHINCHIL\w*|FERRETS?|FURAO|FUROES)\b/, '🐹'],
+  [/\b(LAGART\w*|IGUANA\w*|REPTIL\w*|COBRA\w*)\b/, '🦎'],
+  [/\b(TARTARUG\w*|JABUTI\w*)\b/, '🐢'],
+  [/\b(EQUIN\w*|CAVAL\w*|HORSES?)\b/, '🐴'],
+  [/\b(PEIX\w*|FISH)\b/, '🐟'],
+  [/\b(PRIMAT\w*|MACAC\w*|SAGUI\w*)\b/, '🐒']
+];
+function bichos(t){
+  const n = norm(t).replace(/[^A-Z0-9]+/g, ' ');
+  const achados = BICHOS.filter(([re]) => re.test(n)).map(([, e]) => e);
+  return achados.length ? achados.join('') : '🐾';
+}
+
+/* ---------- status ---------- */
+function infoStatus(chave){
+  const s = CFG.status.find(x => x.chave === chave);
+  if (s) return s;
+  return { chave: chave, rotulo: capFrase(chave), cor: 'cinza' };
+}
+function pilulaStatus(chave, extra){
+  const s = infoStatus(chave || '');
+  return '<span class="st st-' + s.cor + '">' + esc(s.rotulo) + (extra != null ? ' <b>' + extra + '</b>' : '') + '</span>';
+}
+/* Lista de status a mostrar: os conhecidos na ordem do CONFIG + qualquer outro que apareça */
+function statusPresentes(contagens){
+  const chaves = [];
+  CFG.status.forEach(s => { if (contagens.some(c => (c[s.chave] || 0) > 0)) chaves.push(s.chave); });
+  contagens.forEach(c => Object.keys(c).forEach(k => { if (chaves.indexOf(k) < 0 && c[k] > 0) chaves.push(k); }));
+  return chaves;
+}
+
+/* ---------- abas ---------- */
+let SECAO = 'GRUPOS';
+const NOME_SECAO = { GRUPOS: 'Grupos', AGENDA: 'Agenda' };
+function abasDaSecao(sec){
+  if (sec === 'AGENDA') return DADOS.agenda ? ['AGENDA'] : [];
+  return CFG.ordemAbas.filter(id => id === 'RESUMO' || DADOS.grupos[id]);
+}
+function calcularAbas(){
+  const a = abasDaSecao(SECAO);
+  if (a.length) return a;
+  SECAO = 'GRUPOS';
+  return abasDaSecao('GRUPOS');
+}
+function outraSecao(){ return SECAO === 'GRUPOS' && DADOS.agenda ? 'AGENDA' : 'GRUPOS'; }
+/* Abre uma seção do menu (Grupos ou Agenda) na aba indicada */
+function abrirSecao(sec, i){
+  SECAO = sec;
+  ABAS = [];
+  iniciarSlide(i || 0);
+}
+function aplicarMenuRecolhido(recolhido, salvar){
+  document.body.classList.toggle('menu-recolhido', recolhido);
+  const b = $('btnRecolher');
+  b.title = b.ariaLabel = recolhido ? 'Abrir menu' : 'Recolher menu';
+  if (salvar) { try { localStorage.setItem('menuRecolhido', recolhido ? '1' : '0'); } catch (e) {} }
+}
+function montarMenu(){
+  let rec = false;
+  try { rec = localStorage.getItem('menuRecolhido') === '1'; } catch (e) {}
+  aplicarMenuRecolhido(rec, false);
+  $('btnRecolher').addEventListener('click', () => {
+    aplicarMenuRecolhido(!document.body.classList.contains('menu-recolhido'), true);
+    // Depois da animação do menu, reencaixa a tela atual na nova largura
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 350);
+  });
+  document.querySelectorAll('.mi[data-secao]').forEach(b => {
+    b.addEventListener('click', () => { if (iniciado) abrirSecao(b.dataset.secao, 0); });
+  });
+}
+function atualizarMenu(){
+  document.querySelectorAll('.mi[data-secao]').forEach(b => b.classList.toggle('on', b.dataset.secao === SECAO));
+  document.body.classList.toggle('secao-agenda', SECAO === 'AGENDA');
+  // Subitens dos grupos (sempre visíveis, clicáveis)
+  const sub = $('menuSub');
+  const abasG = abasDaSecao('GRUPOS');
+  const atual = ABAS[slideIdx];
+  sub.innerHTML = abasG.map((id, i) =>
+    '<button type="button" data-i="' + i + '" class="' + (SECAO === 'GRUPOS' && id === atual ? 'on' : '') + (abaVazia(id) ? ' vazia' : '') + '"><i></i>' +
+    esc(CFG.rotulos[id] || id) + '</button>').join('');
+  sub.querySelectorAll('button').forEach(b => b.addEventListener('click', () => abrirSecao('GRUPOS', +b.dataset.i)));
+}
+/* Barra de progresso da seção e contagem para a próxima */
+function progressoMenu(){
+  const prog = Math.min(1, (Date.now() - inicioSlide) / (durPag * totalPags));
+  const bar = $('bar' + SECAO);
+  if (bar) bar.style.width = ((slideIdx + prog) / ABAS.length * 100) + '%';
+  let restante = Math.max(0, durPag * totalPags - (Date.now() - inicioSlide));
+  for (let i = slideIdx + 1; i < ABAS.length; i++) if (!CFG.pularAbasVazias || !abaVazia(ABAS[i])) restante += CFG.tempoPorAbaSeg * 1000;
+  const seg = Math.ceil(restante / 1000);
+  const prox = outraSecao();
+  $('menuProx').innerHTML = prox !== SECAO
+    ? 'Próxima: ' + NOME_SECAO[prox] + '<b>em ' + Math.floor(seg / 60) + ':' + dois(seg % 60) + '</b>'
+    : '';
+}
+function abaVazia(id){
+  const g = DADOS.grupos[id];
+  return !!g && !g.erro && g.linhas.length === 0;
+}
+function proximaAba(de){
+  const n = ABAS.length;
+  for (let k = 1; k <= n; k++) {
+    const i = (de + k) % n;
+    if (!CFG.pularAbasVazias || !abaVazia(ABAS[i])) return i;
+  }
+  return 0;
+}
+
+/* ---------- cabeçalho, relógio e rota ---------- */
+const LOGO_CLARO = CFG.logoUrl;                                   // texto escuro, para fundo claro
+const LOGO_ESCURO = CFG.logoUrl.replace('logo-dark', 'logo');     // texto branco, para fundo escuro
+function montarLogo(){
+  const img = $('logo');
+  img.onerror = () => { img.outerHTML = '<span class="logo-txt">Painel</span>'; };
+  img.src = LOGO_ESCURO;
+}
+function aplicarTema(escuro){
+  document.body.classList.toggle('tema-escuro', escuro);
+}
+
+function relogio(){
+  const d = new Date();
+  $('hora').textContent = fmtHora(d);
+  const s = d.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  $('data').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function montarRota(){
+  const n = ABAS.length;
+  let h = '';
+  ABAS.forEach((id, i) => {
+    h += '<button type="button" class="parada" data-i="' + i + '" style="left:' + (i / n * 100) + '%" title="Abrir ' + esc(CFG.rotulos[id] || id) + '">' +
+         '<i></i><span>' + esc(CFG.rotulos[id] || id) + '</span></button>';
+  });
+  h += '<span class="parada fim" id="paradaFim" style="left:100%" title="Fim dos grupos"><span class="pata-fim">' + PATA + '</span></span>';
+  $('paradas').innerHTML = h;
+  $('paradas').querySelectorAll('button.parada').forEach(b => {
+    b.addEventListener('click', () => iniciarSlide(+b.dataset.i));
+  });
+}
+
+function atualizarRota(){
+  const n = ABAS.length;
+  const prog = Math.min(1, (Date.now() - inicioSlide) / (durPag * totalPags));
+  const pos = (slideIdx + prog) / n * 100;
+  $('aviao').style.left = pos + '%';
+  $('feito').style.width = pos + '%';
+  document.querySelectorAll('.parada[data-i]').forEach(p => {
+    const i = +p.dataset.i;
+    p.classList.toggle('passou', i < slideIdx);
+    p.classList.toggle('ativa', i === slideIdx);
+    p.classList.toggle('vazia', abaVazia(ABAS[i]));
+  });
+  const fim = $('paradaFim');
+  if (fim) fim.classList.toggle('chegou', pos >= 99.5);
+  progressoMenu();
+}
+
+function cabecalho(id){
+  const mes = DADOS.mes.nome;
+  let t = CFG.rotulos[id] || id, s = '';
+  if (id === 'AGENDA') {
+    const a = DADOS.agenda || {};
+    const n = eventosDoDia(new Date(), true).length;
+    t = 'Agenda operacional';
+    s = (a.conta || CFG.agendaConta || a.nome || 'Agenda principal') + (a.erro ? '' : ', ' + (n ? plural(n, 'compromisso', 'compromissos') + ' hoje' : 'sem compromissos hoje'));
+  } else if (id === 'RESUMO') {
+    t = 'Resumo dos embarques';
+    s = 'Processos ativos de todos os meses, movimento de ' + mes + ' e prévia de ' + DADOS.proxMes.nome;
+  } else if (DADOS.grupos[id]) {
+    const g = DADOS.grupos[id];
+    t = g.titulo + (g.titulo !== g.rotulo ? ' (' + g.rotulo + ')' : '') + ' em ' + mes;
+    const anim = g.linhas.reduce((a, l) => a + (l.quantidade || 0), 0);
+    s = g.linhas.length
+      ? plural(g.linhas.length, 'processo', 'processos') + ' com viagem em ' + mes + ', ' + plural(anim, 'animal', 'animais') + ', da viagem mais próxima para a mais distante'
+      : 'Nenhuma viagem prevista para ' + mes;
+  }
+  $('tituloAba').textContent = t;
+  $('subAba').textContent = s;
+  const marcas = (CFG.agendaMarcas || []).join(' ou ');
+  $('legenda').innerHTML = id === 'AGENDA'
+    ? '<span class="sit sit-pend">Pendente</span><span class="sit sit-atrasado">Atrasado</span><span class="sit sit-feito">Concluído</span>' +
+      '<span>Para concluir, mude a cor do evento para cinza (Grafite) no Google Agenda</span>' :
+    id === 'RESUMO' ? '' :
+    '<span class="chip chip-hoje">Hoje</span><span class="chip chip-breve">Próximos 7 dias</span>' +
+    '<span class="chip">Data definida</span><span class="chip chip-prev">Mês previsto</span>';
+}
+
+function rodapePaginas(){
+  const el = $('paginas');
+  if (totalPags <= 1) { el.innerHTML = ''; return; }
+  let h = '<span class="txt">Página ' + (pagIdx + 1) + ' de ' + totalPags + '</span>';
+  for (let i = 0; i < totalPags; i++) {
+    h += '<button type="button" data-p="' + i + '" class="' + (i === pagIdx ? 'on' : '') + '" title="Ir para a página ' + (i + 1) + '"><i></i></button>';
+  }
+  el.innerHTML = h;
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => irParaPagina(+b.dataset.p)));
+}
+
+/* Pula para uma página da aba atual; o tempo continua contando a partir dela */
+function irParaPagina(p){
+  if (!iniciado || p < 0 || p >= totalPags) return;
+  pagIdx = p;
+  inicioSlide = Date.now() - p * durPag;
+  paginaGrupo(ABAS[slideIdx], pagIdx);
+  rodapePaginas();
+  animar();
+  atualizarRota();
+}
+
+function animar(){
+  palco.classList.remove('entra'); void palco.offsetWidth; palco.classList.add('entra');
+}
+
+/* ---------- células ---------- */
+function chipViagem(l){
+  if (l.viagemTipo === 'data' && l.viagem) {
+    const dif = difDias(l.viagem);
+    let cls = 'chip', extra = '';
+    if (dif < 0) cls += ' chip-passado';
+    else if (dif === 0) { cls += ' chip-hoje'; extra = 'Hoje'; }
+    else if (dif === 1) { cls += ' chip-breve'; extra = 'Amanhã'; }
+    else if (dif <= 7) cls += ' chip-breve';
+    return '<span class="' + cls + '">' + fmtData(l.viagem) + (extra ? '<b>' + extra + '</b>' : '') + '</span>';
+  }
+  if (l.viagemTipo === 'previsto' && l.viagemMes) {
+    const [a, m] = l.viagemMes.split('-');
+    const atrasado = l.viagemMes < chaveMesAtual();
+    return '<span class="chip chip-prev' + (atrasado ? ' atrasado' : '') + '">Previsto ' + MES_CURTO[+m - 1] + '/' + a.slice(2) + '</span>';
+  }
+  const txt = l.viagem_txt && norm(l.viagem_txt) !== 'SEM PREVISAO' ? capFrase(l.viagem_txt) : 'Sem previsão';
+  return '<span class="chip chip-sem">' + esc(txt) + '</span>';
+}
+
+function simNao(v, txt){
+  if (v === null || v === undefined) return traco;
+  const n = norm(txt);
+  const rotulo = (!n || ['SIM','S','SM','NAO','N','TRUE','FALSE','X','OK','0','1'].indexOf(n) >= 0) ? (v ? 'Sim' : 'Não') : capFrase(txt);
+  return '<span class="sn ' + (v ? 'sn-sim' : 'sn-nao') + '">' + esc(rotulo) + '</span>';
+}
+
+function celula(c, l){
+  const v = l[c.id];
+  if (c.id === 'grupo' || c.id === 'cliente' || c.id === 'pais') return v ? esc(nomeProprio(v)) : traco;
+  switch (c.tipo) {
+    case 'data': return chipViagem(l);
+    case 'status': return pilulaStatus(l.status);
+    case 'simnao': return simNao(v, l[c.id + '_txt']);
+    case 'qtd': return v != null ? num(v) : (l[c.id + '_txt'] ? esc(l[c.id + '_txt']) : traco);
+    case 'especie': return v ? '<span class="bicho">' + bichos(v) + '</span>' + esc(especieTexto(v)) : traco;
+    case 'pill': return v ? '<span class="tag">' + esc(v) + '</span>' : traco;
+    default: return v ? esc(v) : traco;
+  }
+}
+
+function linhaHtml(g, l){
+  return '<tr>' + g.colunas.map(c => '<td class="c-' + c.tipo + '">' + celula(c, l) + '</td>').join('') + '</tr>';
+}
+
+function mensagem(texto, erro){
+  return '<div class="msg' + (erro ? ' erro' : '') + '">' + PATA + '<p>' + esc(texto) + '</p></div>';
+}
+
+/* ---------- abas de grupo: só o mês vigente, com faixa de status ---------- */
+function prepararGrupo(id){
+  const g = DADOS.grupos[id];
+  if (!g) { palco.innerHTML = mensagem('A aba "' + id + '" não está configurada.', true); return 1; }
+  if (g.erro) { palco.innerHTML = mensagem(g.erro, true); return 1; }
+  if (!g.linhas.length) { palco.innerHTML = mensagem('Nenhuma viagem de ' + g.titulo + ' em ' + DADOS.mes.nome + '.'); return 1; }
+
+  const chaves = statusPresentes([g.status]);
+  const faixa = '<div class="faixa-status"><strong>Status em ' + esc(DADOS.mes.nome) + '</strong>' +
+    chaves.map(k => pilulaStatus(k, num(g.status[k] || 0))).join('') + '</div>';
+  const falta = g.faltando && g.faltando.length
+    ? '<p class="falta">Colunas não encontradas na planilha: ' + esc(g.faltando.join(', ')) + '. Confira os nomes no CONFIG.</p>' : '';
+
+  palco.innerHTML = '<div class="tabela-wrap">' + faixa + '<table class="tabela"><thead><tr>' +
+    g.colunas.map(c => '<th class="col-' + c.tipo + '">' + esc(c.titulo) + '</th>').join('') +
+    '</tr></thead><tbody>' + linhaHtml(g, g.linhas[0]) + '</tbody></table>' + falta + '</div>';
+
+  const wrap = palco.querySelector('.tabela-wrap');
+  const cs = getComputedStyle(wrap);
+  const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const fxH = palco.querySelector('.faixa-status').offsetHeight;
+  const thH = palco.querySelector('thead').offsetHeight;
+  const trH = palco.querySelector('tbody tr').offsetHeight || 40;
+  const fEl = palco.querySelector('.falta');
+  const fH = fEl ? fEl.offsetHeight + 12 : 0;
+  porPagina = Math.max(3, Math.floor((wrap.clientHeight - pad - fxH - thH - fH) / trH));
+  paginaGrupo(id, 0);
+  return Math.ceil(g.linhas.length / porPagina);
+}
+
+function paginaGrupo(id, p){
+  if (id === 'AGENDA') { paginaAgenda(p); return; }
+  const g = DADOS.grupos[id];
+  const tb = palco.querySelector('tbody');
+  if (!g || !tb) return;
+  tb.innerHTML = g.linhas.slice(p * porPagina, (p + 1) * porPagina).map(l => linhaHtml(g, l)).join('');
+}
+
+/* ---------- resumo ---------- */
+function renderResumo(){
+  const r = DADOS.resumo, a = r.ativos, m = r.mes, px = r.proxMes;
+
+  const detalhe = (dataN, prevN) => {
+    const partes = [];
+    if (dataN) partes.push(num(dataN) + ' com data');
+    if (prevN) partes.push(plural(prevN, 'prevista', 'previstas'));
+    return partes.length ? partes.join(' e ') : 'nenhuma no mês';
+  };
+
+  // Ativos por serviço (linha de rodapé do painel turquesa)
+  const ativosServicos = r.porGrupo.filter(g => !g.erro)
+    .map(g => '<b>' + esc(g.rotulo) + '</b> ' + num(g.ativos.processos)).join(', ');
+
+  // Tabela do mês vigente: viagens + status por serviço
+  const chavesSt = statusPresentes(r.porGrupo.filter(g => !g.erro).map(g => g.mes.status));
+  const linhasGrupo = r.porGrupo.map(g => {
+    if (g.erro) return '<tr data-aba="' + g.chave + '"><td>' + esc(g.rotulo) + '</td><td colspan="' + (6 + chavesSt.length) + '" class="vazio">aba com erro</td></tr>';
+    const gm = g.mes;
+    return '<tr data-aba="' + g.chave + '"><td>' + esc(g.rotulo) + '</td>' +
+      '<td>' + num(gm.processos) + '</td><td>' + num(gm.comData) + '</td><td>' + num(gm.previstos) + '</td>' +
+      '<td>' + num(gm.animais) + '</td>' +
+      '<td>' + (g.temCaixa ? num(gm.caixas) : traco) + '</td>' +
+      '<td>' + (g.temColeta ? num(gm.coletas) : traco) + '</td>' +
+      chavesSt.map((k, i) => '<td' + (i === 0 ? ' class="sep"' : '') + '>' + num(gm.status[k] || 0) + '</td>').join('') +
+      '</tr>';
+  }).join('');
+  const totalSt = chavesSt.map((k, i) => '<td' + (i === 0 ? ' class="sep"' : '') + '>' + num(m.status[k] || 0) + '</td>').join('');
+  const cabSt = chavesSt.map((k, i) => {
+    const s = infoStatus(k);
+    return '<th' + (i === 0 ? ' class="sep"' : '') + '><span class="ponto p-' + s.cor + '"></span>' + esc(s.rotulo) + '</th>';
+  }).join('');
+
+  // Prévia do próximo mês
+  const porGrupoProx = r.porGrupo.filter(g => !g.erro && g.prox.processos > 0)
+    .map(g => '<b>' + esc(g.rotulo) + '</b> ' + num(g.prox.processos)).join(', ');
+
+  // Ranking de países
+  const max = r.ranking.length ? r.ranking[0].processos : 1;
+  const baseTxt = r.rankingBase === 'ativos' ? 'processos ativos' : r.rankingBase === 'mes' ? 'viagens de ' + m.nome : 'todos os processos';
+  const ranking = r.ranking.length
+    ? r.ranking.map((p, i) =>
+        '<div class="rk"><span class="pos">' + (i + 1) + '</span><span class="nome">' + esc(p.pais) + '</span>' +
+        '<span class="barra"><i style="width:' + Math.max(4, Math.round(p.processos / max * 100)) + '%"></i></span>' +
+        '<span class="qt">' + num(p.processos) + '</span></div>').join('')
+    : '<p class="nada">Sem países preenchidos.</p>';
+
+  // Próximos 7 dias
+  const MAX_LISTA = 6;
+  // Quantidade por serviço nos próximos 7 dias (EMB, CVI, IMP / RET e total)
+  const p7 = (r.proximosPorServico || []).filter(x => x.chave !== 'PETLUXO' || x.processos > 0);
+  const tot7 = r.proximosTotal != null ? r.proximosTotal : r.proximos.length;
+  const anim7 = p7.reduce((t, x) => t + x.animais, 0);
+  const resumo7 = '<div class="prox7" style="grid-template-columns:repeat(' + ((p7.length + 1) > 4 ? 3 : 2) + ',minmax(0,1fr))">' +
+    p7.map(x => '<div' + (x.processos ? '' : ' class="zero"') + '><b>' + num(x.processos) + '</b><span>' + esc(x.rotulo) + '</span><small>' + plural(x.animais, 'animal', 'animais') + '</small></div>').join('') +
+    '<div class="total"><b>' + num(tot7) + '</b><span>Total</span><small>' + plural(anim7, 'animal', 'animais') + '</small></div></div>';
+  const itens = r.proximos.length
+    ? r.proximos.slice(0, MAX_LISTA).map(p =>
+        '<div class="item">' + chipViagem({viagemTipo:'data', viagem:p.viagem}) +
+        '<div class="quem"><span class="bicho">' + bichos(p.especie) + '</span><b>' + esc(p.processo || '—') + '</b> ' +
+        esc(nomeProprio(p.cliente)) + ' <span>para ' + esc(p.destino || '—') + (p.quantidade ? ', ' + plural(p.quantidade, 'animal', 'animais') : '') + '</span></div>' +
+        '<span class="tag">' + esc(p.grupo) + '</span></div>').join('') +
+      (r.proximos.length > MAX_LISTA ? '<div class="mais">+ mais ' + plural(r.proximos.length - MAX_LISTA, 'embarque', 'embarques') + '</div>' : '')
+    : '<p class="nada">Nenhum embarque com data marcada nos próximos 7 dias.</p>';
+
+  palco.innerHTML =
+    '<div class="resumo">' +
+      // Geral: processos ativos de todos os meses
+      '<section class="painel-ativos"><span class="patinha">' + PATA + '</span>' +
+        '<div class="rotulo-painel">Processos ativos<em>todos os meses, sem concluídos e cancelados</em></div>' +
+        '<div class="kpis k3">' +
+          '<div class="kpi"><div class="n">' + num(a.comData) + '</div><div class="r">Com data definida</div><div class="s">dia da viagem confirmado</div></div>' +
+          '<div class="kpi"><div class="n">' + num(a.previstos) + '</div><div class="r">Previstos</div><div class="s">já têm o mês da viagem</div></div>' +
+          '<div class="kpi"><div class="n">' + num(a.semPrevisao) + '</div><div class="r">Sem previsão</div><div class="s">ainda sem mês de viagem</div></div>' +
+        '</div>' +
+        '<div class="linha-servicos">' + plural(a.processos, 'processo ativo', 'processos ativos') + ', ' + plural(a.animais, 'animal', 'animais') + ': ' + ativosServicos + '</div>' +
+      '</section>' +
+      // Mês vigente
+      '<section class="painel-mes">' +
+        '<div class="rotulo-painel">' + esc(capFrase(m.nome)) + '<em>viagens do mês vigente, todos os serviços</em></div>' +
+        '<div class="kpis k4">' +
+          '<div class="kpi"><div class="n">' + num(m.processos) + '</div><div class="r">Processos</div><div class="s">' + num(m.comData) + ' com data e ' + plural(m.previstos, 'previsto', 'previstos') + '</div></div>' +
+          '<div class="kpi"><div class="n">' + num(m.animais) + '</div><div class="r">Animais</div><div class="s">viajando no mês</div></div>' +
+          '<div class="kpi"><div class="n">' + num(m.coletas) + '</div><div class="r">Coletas</div><div class="s">' + detalhe(m.coletasData, m.coletasPrev) + '</div></div>' +
+          '<div class="kpi"><div class="n">' + num(m.caixas) + '</div><div class="r">Caixas</div><div class="s">' + detalhe(m.caixasData, m.caixasPrev) + '</div></div>' +
+        '</div>' +
+      '</section>' +
+      '<div class="col-esq">' +
+        '<section class="bloco bloco-tabela">' +
+          '<h2>' + esc(capFrase(m.nome)) + ' por serviço<small>toque no serviço para abrir a aba</small></h2>' +
+          '<table class="mini"><thead>' +
+            '<tr><th></th><th class="grupo-col" colspan="6">Viagens em ' + esc(m.nome) + '</th><th class="grupo-col st-grupo sep" colspan="' + chavesSt.length + '">Status em ' + esc(m.nome) + '</th></tr>' +
+            '<tr><th>Serviço</th><th>Processos</th><th>Com data</th><th>Previstos</th><th>Animais</th><th>Caixas</th><th>Coletas</th>' + cabSt + '</tr>' +
+          '</thead><tbody>' + linhasGrupo + '</tbody>' +
+          '<tfoot><tr><td>Total</td><td>' + num(m.processos) + '</td><td>' + num(m.comData) + '</td><td>' + num(m.previstos) + '</td><td>' +
+            num(m.animais) + '</td><td>' + num(m.caixas) + '</td><td>' + num(m.coletas) + '</td>' + totalSt + '</tr></tfoot></table>' +
+        '</section>' +
+        '<section class="bloco"><h2>Ranking de países<small>' + esc(r.rankingAbas.join(', ')) + ', ' + baseTxt + '</small></h2>' +
+          '<div class="ranking">' + ranking + '</div></section>' +
+      '</div>' +
+      '<div class="col-dir">' +
+        '<section class="bloco prox-mes"><h2>Prévia de ' + esc(px.nome) + '</h2>' +
+          '<div class="prox-n">' +
+            '<div><b>' + num(px.processos) + '</b><span>processos</span></div>' +
+            '<div><b>' + num(px.comData) + '</b><span>com data</span></div>' +
+            '<div><b>' + num(px.previstos) + '</b><span>previstos</span></div>' +
+            '<div><b>' + num(px.animais) + '</b><span>animais</span></div>' +
+            '<div><b>' + num(px.caixas) + '</b><span>caixas</span></div>' +
+            '<div><b>' + num(px.coletas) + '</b><span>coletas</span></div>' +
+          '</div>' +
+          (porGrupoProx ? '<p class="prox-g">' + porGrupoProx + '</p>' : '') +
+        '</section>' +
+        '<section class="bloco lista-bloco"><h2>Embarques nos próximos 7 dias</h2>' + resumo7 + '</section>' +
+      '</div>' +
+    '</div>';
+
+  palco.querySelectorAll('tr[data-aba]').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const i = ABAS.indexOf(tr.dataset.aba);
+      if (i >= 0) iniciarSlide(i);
+    });
+  });
+  ajustarResumo();
+}
+
+/* Reduz o Resumo proporcionalmente até caber inteiro na tela, sem cortar nada */
+const ESCALA_MIN = 0.78;   // abaixo disso não reduz mais: aparece a barra de rolagem
+function ajustarResumo(){
+  const el = palco.querySelector('.resumo');
+  if (!el) return;
+  const W = palco.clientWidth, H = palco.clientHeight;
+  el.style.transform = '';
+  // Testa um fator de escala: o conteúdo, desenhado na largura W/f, cabe na altura H/f?
+  const cabe = f => {
+    el.style.width = (W / f) + 'px';
+    el.style.minHeight = '0px';
+    return el.scrollHeight * f <= H + 1 && el.scrollWidth <= el.clientWidth + 1;
+  };
+  let lo = ESCALA_MIN, hi = 1.35, fator;
+  if (cabe(hi)) fator = hi;
+  else if (!cabe(lo)) fator = lo;               // não cabe nem reduzido: usa rolagem
+  else {
+    for (let k = 0; k < 12; k++) { const m = (lo + hi) / 2; if (cabe(m)) lo = m; else hi = m; }
+    fator = lo;
+  }
+  el.style.width = (W / fator) + 'px';
+  el.style.minHeight = '0px';
+  const alturaReal = el.scrollHeight;
+  el.style.minHeight = Math.max(H / fator, alturaReal) + 'px';
+  el.style.transform = fator !== 1 ? 'scale(' + fator + ')' : '';
+  // Com escala, a área ocupada muda; ajusta a altura para a rolagem funcionar certinho
+  el.style.marginBottom = (Math.max(H / fator, alturaReal) * (fator - 1)) + 'px';
+  el.style.marginRight = ((W / fator) * (fator - 1)) + 'px';
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (iniciado) reajustarTela(); });
+
+/* Recalcula o encaixe da tela atual sem reiniciar o tempo (fontes, logo ou menu mudaram de tamanho) */
+function reajustarTela(){
+  if (!iniciado) return;
+  if (ABAS[slideIdx] === 'RESUMO') ajustarResumo();
+}
+
+/* Remove itens que não cabem e mostra "+ N" no fim */
+function cortarExcesso(box, seletor, texto){
+  if (!box) return;
+  const itens = Array.from(box.querySelectorAll(seletor));
+  let cortados = 0;
+  const transborda = () => box.scrollHeight > box.clientHeight + 1;
+  while (transborda() && itens.length) { itens.pop().remove(); cortados++; }
+  if (!cortados) return;
+  const m = document.createElement('div');
+  m.className = 'mais';
+  box.appendChild(m);
+  for (;;) {
+    m.textContent = '+ ' + texto(cortados);
+    if (transborda() && itens.length) { itens.pop().remove(); cortados++; } else break;
+  }
+}
+
+
+/* ---------- agenda (Google Agenda) ---------- */
+const SEM_LONGO = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MESES_LONGO = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const ICO_CAL = '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V2Zm12 8H5v9h14v-9ZM5 8h14V6H5v2Z"/></svg>';
+let AG_LISTA = [], AG_PAGINAS = [[0, 0]];
+let AG_DIA = null;          // dia escolhido no calendário (null = hoje)
+let AG_MODO = 'dia';        // 'dia' ou 'atrasados'
+let AG_FILTRO = new Set();  // cores selecionadas (vazio = todas)
+try { AG_FILTRO = new Set(JSON.parse(localStorage.getItem('agFiltro') || '[]')); } catch (e) {}
+function salvarFiltro(){ try { localStorage.setItem('agFiltro', JSON.stringify(Array.from(AG_FILTRO))); } catch (e) {} }
+
+function chaveCor(e){ return e.corChave + '|' + e.cor; }
+function passaFiltro(e){ return !AG_FILTRO.size || AG_FILTRO.has(chaveCor(e)); }
+function inicioDia(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function mesmoDia(a, b){ return inicioDia(a).getTime() === inicioDia(b).getTime(); }
+function todosEventos(){ return (DADOS.agenda && DADOS.agenda.eventos) || []; }
+function eventosEntre(ini, fim, semFiltro){
+  return todosEventos().filter(e => new Date(e.inicio) < fim && new Date(e.fim) > ini && (semFiltro || passaFiltro(e)));
+}
+function eventosDoDia(d, semFiltro){
+  const ini = inicioDia(d), fim = new Date(ini.getTime() + DIA);
+  return eventosEntre(ini, fim, semFiltro).sort((a, b) => (b.diaTodo - a.diaTodo) || (new Date(a.inicio) - new Date(b.inicio)));
+}
+/* Último dia do evento (eventos de dia todo terminam às 00:00 do dia seguinte) */
+function ultimoDia(e){ return inicioDia(new Date(new Date(e.fim).getTime() - (e.diaTodo ? 1 : 0))); }
+/* Atrasado = não concluído (não está cinza) e o dia do evento já virou. O horário não importa. */
+function ehAtrasado(e){ return !e.concluido && ultimoDia(e) < inicioDia(new Date()); }
+/* Compromissos atrasados dos últimos X dias */
+function eventosAtrasados(){
+  const desde = inicioDia(new Date()).getTime() - (CFG.agendaDiasParaTras || 7) * DIA;
+  return todosEventos().filter(e => passaFiltro(e) && ehAtrasado(e) && ultimoDia(e).getTime() >= desde)
+    .sort((a, b) => new Date(b.inicio) - new Date(a.inicio));
+}
+function duracao(e){
+  if (e.diaTodo) return '—';
+  const min = Math.round((new Date(e.fim) - new Date(e.inicio)) / 60000);
+  if (min < 60) return min + ' min';
+  const h = Math.floor(min / 60), m = min % 60;
+  return h + 'h' + (m ? dois(m) : '');
+}
+/* Situação: Concluído (cinza na agenda), Atrasado (dia já passou) ou Pendente (hoje e próximos dias) */
+function situacao(e){
+  if (e.concluido) return 'feito';
+  if (ehAtrasado(e)) return 'atrasado';
+  return 'pend';
+}
+const SIT = { feito:['sit-feito','Concluído'], atrasado:['sit-atrasado','Atrasado'], pend:['sit-pend','Pendente'] };
+
+function linhaAgenda(e, comData){
+  const st = situacao(e);
+  const hora = e.diaTodo ? 'Dia todo' : fmtHora(e.inicio);
+  return '<tr class="' + (st === 'feito' ? 'passado' : st === 'atrasado' ? 'linha-atrasada' : '') + '" style="--c:' + esc(e.cor) + '">' +
+    (comData ? '<td class="hora">' + fmtData(e.inicio) + '</td>' : '') +
+    '<td class="hora">' + hora + '</td>' +
+    '<td class="tit"><div class="t1"><i></i><span>' + esc(e.titulo) + '</span></div>' + (e.local ? '<span class="loc">' + esc(e.local) + '</span>' : '') + '</td>' +
+    '<td><span class="cat"><i></i>' + esc(e.nomeCor) + '</span></td>' +
+    '<td>' + duracao(e) + '</td>' +
+    '<td><span class="sit ' + SIT[st][0] + '">' + SIT[st][1] + '</span></td></tr>';
+}
+
+function kpi(cor, icone, rotulo, numero, sub, barra, extra){
+  extra = extra || {};
+  const tag = extra.acao ? 'button type="button" data-acao="' + extra.acao + '"' : 'div';
+  return '<' + tag + ' class="ag-card ag-kpi' + (extra.cls ? ' ' + extra.cls : '') + '"><span class="kp-top"><span class="ag-ico" style="background:' + cor + '33;color:' + cor + '">' + icone + '</span>' +
+    '<span class="lb">' + esc(rotulo) + '</span></span><span class="n' + (extra.texto ? ' n-txt' : '') + '">' + numero + '</span>' +
+    (barra != null ? '<span class="ag-bar"><i style="width:' + barra + '%;background:' + cor + '"></i></span>' : '') +
+    '<span class="s">' + sub + '</span></' + (extra.acao ? 'button' : 'div') + '>';
+}
+
+function miniCalendario(hoje, selecionado){
+  const ano = hoje.getFullYear(), mes = hoje.getMonth();
+  const primeiro = new Date(ano, mes, 1);
+  const inicio = new Date(ano, mes, 1 - primeiro.getDay());
+  let h = '<h3>' + capFrase(MESES_LONGO[mes]) + ' de ' + ano + '<small>toque num dia</small></h3><div class="cal-grade">' +
+    ['D','S','T','Q','Q','S','S'].map(x => '<span class="ds">' + x + '</span>').join('');
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+    if (i >= 35 && d.getMonth() !== mes) break;
+    if (d.getMonth() !== mes) { h += '<span class="d fora"><b>' + d.getDate() + '</b><span class="pts"></span></span>'; continue; }
+    const cores = [];
+    eventosDoDia(d).forEach(e => { if (cores.indexOf(e.cor) < 0) cores.push(e.cor); });
+    const cls = 'd' + (mesmoDia(d, hoje) ? ' hoje' : '') + (selecionado && mesmoDia(d, selecionado) ? ' sel' : '');
+    h += '<button type="button" class="' + cls + '" data-dia="' + d.getDate() + '" title="Ver ' + d.getDate() + '/' + dois(mes + 1) + '"><b>' + d.getDate() + '</b><span class="pts">' +
+         cores.slice(0, 3).map(c => '<i style="--c:' + esc(c) + '"></i>').join('') + '</span></button>';
+  }
+  return h + '</div>';
+}
+
+function blocoFiltro(hoje){
+  // Cores presentes no mês (contagem sem filtro, para mostrar o total de cada cor)
+  const ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1), fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1);
+  const porCor = {};
+  eventosEntre(ini, fim, true).forEach(e => {
+    const k = chaveCor(e);
+    (porCor[k] = porCor[k] || { k: k, cor: e.cor, nome: e.nomeCor, n: 0 }).n++;
+  });
+  const cores = Object.keys(porCor).map(k => porCor[k]).sort((x, y) => y.n - x.n);
+  if (!cores.length) return '';
+  return '<section class="ag-card"><h3>Filtrar por cor' +
+      (AG_FILTRO.size ? '<button type="button" class="limpar" data-acao="todas">Mostrar todas</button>' : '<small>toque numa cor</small>') + '</h3>' +
+    '<div class="cores">' + cores.map(c =>
+      '<button type="button" data-cor="' + esc(c.k) + '" class="' + (AG_FILTRO.size && !AG_FILTRO.has(c.k) ? 'off' : '') + (AG_FILTRO.has(c.k) ? ' sel' : '') + '" style="--c:' + esc(c.cor) + '">' +
+      '<i></i><span>' + esc(c.nome) + '</span><b>' + num(c.n) + '</b></button>').join('') + '</div></section>';
+}
+
+/* Reabre a agenda após um clique, sem trocar de aba; reinicia o tempo da tela */
+function reabrirAgenda(){
+  cabecalho('AGENDA');
+  pagIdx = 0;
+  totalPags = prepararAgenda();
+  durPag = Math.max(CFG.paginaMinSeg * 1000, CFG.tempoPorAbaSeg * 1000 / totalPags);
+  inicioSlide = Date.now();
+  rodapePaginas();
+  animar();
+  atualizarRota();
+}
+
+function prepararAgenda(){
+  const a = DADOS.agenda || {};
+  const hoje = new Date(), h0 = inicioDia(hoje);
+  const dia = AG_DIA || hoje;
+  const ehHojeSel = mesmoDia(dia, hoje);
+
+  // KPIs (sempre de hoje, respeitando o filtro de cores)
+  const doHoje = eventosDoDia(hoje);
+  const concluidosHoje = doHoje.filter(e => e.concluido).length;
+  const pendentesHoje = doHoje.length - concluidosHoje;
+  // Próximo pendente: o primeiro não concluído de hoje; se hoje está tudo feito, o primeiro dos próximos dias
+  const prox = doHoje.find(e => !e.concluido) ||
+    todosEventos().filter(e => passaFiltro(e) && !e.concluido && inicioDia(new Date(e.inicio)) > h0)
+      .sort((x, y) => new Date(x.inicio) - new Date(y.inicio))[0];
+  const atrasados = eventosAtrasados();
+  const amanha = eventosDoDia(new Date(h0.getTime() + DIA));
+  const sem7 = eventosEntre(new Date(h0.getTime() + DIA), new Date(h0.getTime() + 8 * DIA));
+  const dias7 = new Set(sem7.map(e => inicioDia(new Date(Math.max(new Date(e.inicio), h0.getTime() + DIA))).toDateString())).size;
+
+  let proxTit = 'Tudo concluído', proxSub = 'nenhum compromisso pendente';
+  if (prox) {
+    const di = new Date(prox.inicio);
+    proxTit = esc(prox.titulo);
+    const quando = mesmoDia(di, hoje) ? '' : mesmoDia(di, new Date(h0.getTime() + DIA)) ? 'amanhã, ' : fmtData(prox.inicio) + ', ';
+    proxSub = quando + esc(prox.nomeCor) + (prox.local ? ', ' + esc(prox.local) : '');
+  }
+
+  const kpis = '<div class="ag-kpis">' +
+    kpi('#3DB48A', ICO_CAL, 'Compromissos hoje', num(doHoje.length),
+        doHoje.length ? num(concluidosHoje) + ' concluídos, ' + num(pendentesHoje) + ' pendentes' : 'dia livre',
+        doHoje.length ? Math.round(concluidosHoje / doHoje.length * 100) : 0) +
+    kpi('#FFC857', '⏱', 'Próximo pendente', proxTit, proxSub, null, { texto: true, cls: 'larga' }) +
+    kpi('#FF5C4D', '⚠', 'Atrasados', num(atrasados.length),
+        atrasados.length ? 'não concluídos de dias anteriores (últimos ' + (CFG.agendaDiasParaTras || 7) + ' dias)' : 'tudo em dia',
+        null, { acao: 'atrasados', cls: (AG_MODO === 'atrasados' ? 'ativo' : '') + (atrasados.length ? ' alerta' : '') }) +
+    kpi('#33B679', '☀', 'Amanhã', num(amanha.length),
+        amanha.length ? (amanha[0].diaTodo ? 'começa com evento de dia todo' : 'primeiro às ' + fmtHora(amanha[0].inicio)) : 'sem compromissos') +
+    kpi('#7986CB', '🐾', 'Próximos 7 dias', num(sem7.length), sem7.length ? 'em ' + plural(dias7, 'dia', 'dias') + ' com agenda' : 'semana livre') +
+    '</div>';
+
+  // Lista principal: dia escolhido ou atrasados
+  let titulo, subt, comData = false;
+  if (AG_MODO === 'atrasados') {
+    AG_LISTA = atrasados;
+    titulo = 'Atrasados';
+    subt = 'Compromissos de dias anteriores que ainda não estão em cinza (concluído) no Google Agenda';
+    comData = true;
+  } else {
+    AG_LISTA = eventosDoDia(dia);
+    titulo = ehHojeSel ? 'Agenda de hoje' : 'Agenda de ' + SEM_LONGO[dia.getDay()];
+    subt = capFrase(SEM_LONGO[dia.getDay()]) + ', ' + dia.getDate() + ' de ' + MESES_LONGO[dia.getMonth()] + ' de ' + dia.getFullYear();
+  }
+  const voltar = (AG_MODO === 'atrasados' || !ehHojeSel) ? '<button type="button" class="voltar" data-acao="hoje">Voltar para hoje</button>' : '';
+  const filtroTxt = AG_FILTRO.size ? '<span class="filtrando">Filtrando ' + plural(AG_FILTRO.size, 'cor', 'cores') + '</span>' : '';
+
+  let corpo;
+  if (a.erro) {
+    corpo = '<div class="ag-erro">' + esc(a.erro) + '</div>';
+  } else if (!AG_LISTA.length) {
+    corpo = '<div class="ag-vazio">' + PATA + '<span>' +
+      (AG_MODO === 'atrasados' ? 'Nenhum compromisso atrasado' : 'Nenhum compromisso ' + (ehHojeSel ? 'para hoje' : 'neste dia')) +
+      (AG_FILTRO.size ? ' nas cores filtradas' : '') + '</span></div>';
+  } else {
+    corpo = '<table class="ag-tab"><thead><tr>' + (comData ? '<th>Data</th>' : '') + '<th>Horário</th><th>Compromisso</th><th>Categoria</th><th>Duração</th><th>Situação</th></tr></thead>' +
+            '<tbody></tbody></table>';
+  }
+  const painelDia = '<section class="ag-card ag-dia"><div class="ag-topo"><span class="ico-cal">' + ICO_CAL + '</span><div><h2>' + titulo + '</h2>' +
+    '<p>' + subt + '</p></div><div class="ag-acoes">' + filtroTxt + voltar +
+    (AG_LISTA.length ? '<span class="cont">' + plural(AG_LISTA.length, 'compromisso', 'compromissos') + '</span>' : '') + '</div></div>' + corpo + '</section>';
+
+  // Próximos dias (a partir de amanhã)
+  const proxDias = eventosEntre(new Date(h0.getTime() + DIA), new Date(h0.getTime() + 15 * DIA));
+  const itens = proxDias.length
+    ? proxDias.map(e => {
+        const d = new Date(Math.max(new Date(e.inicio), h0.getTime() + DIA));
+        return '<div class="pi" style="--c:' + esc(e.cor) + '"><div class="dt"><b>' + d.getDate() + '</b><span>' + SEM[d.getDay()] + '</span></div>' +
+          '<div class="tx"><strong>' + esc(e.titulo) + '</strong><span>' + (e.diaTodo ? 'Dia todo' : fmtHora(e.inicio) + ' às ' + fmtHora(e.fim)) +
+          ', ' + esc(e.nomeCor) + '</span></div></div>';
+      }).join('')
+    : '<p class="nada">Nada agendado nos próximos dias.</p>';
+
+  palco.innerHTML = '<div class="ag">' + kpis + painelDia +
+    '<aside class="ag-lado"><section class="ag-card">' + miniCalendario(hoje, AG_MODO === 'dia' ? dia : null) + '</section>' + blocoFiltro(hoje) +
+    '<section class="ag-card ag-prox"><h3>Próximos dias</h3><div class="prox-lista" id="proxLista">' + itens + '</div></section></aside></div>';
+
+  // Cliques: dias do calendário, filtro de cores, atrasados e voltar
+  palco.querySelectorAll('.cal-grade button[data-dia]').forEach(b => b.addEventListener('click', () => {
+    AG_DIA = new Date(hoje.getFullYear(), hoje.getMonth(), +b.dataset.dia); AG_MODO = 'dia'; reabrirAgenda();
+  }));
+  palco.querySelectorAll('.cores button[data-cor]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.cor;
+    if (!AG_FILTRO.size) AG_FILTRO.add(k);               // 1º toque: mostra só essa cor
+    else if (AG_FILTRO.has(k)) AG_FILTRO.delete(k);      // toques seguintes: soma ou tira cores
+    else AG_FILTRO.add(k);
+    salvarFiltro(); reabrirAgenda();
+  }));
+  palco.querySelectorAll('[data-acao]').forEach(b => b.addEventListener('click', () => {
+    const acao = b.dataset.acao;
+    if (acao === 'todas') { AG_FILTRO.clear(); salvarFiltro(); }
+    else if (acao === 'atrasados') { AG_MODO = AG_MODO === 'atrasados' ? 'dia' : 'atrasados'; AG_DIA = null; }
+    else if (acao === 'hoje') { AG_MODO = 'dia'; AG_DIA = null; }
+    reabrirAgenda();
+  }));
+
+  cortarExcesso($('proxLista'), '.pi', n => 'mais ' + plural(n, 'compromisso', 'compromissos'));
+
+  if (a.erro || !AG_LISTA.length) { AG_PAGINAS = [[0, 0]]; return 1; }
+  // Paginação pela altura real de cada linha (linhas com local são mais altas)
+  const card = palco.querySelector('.ag-dia');
+  const cs = getComputedStyle(card);
+  const tb = palco.querySelector('.ag-tab tbody');
+  tb.innerHTML = AG_LISTA.map(e => linhaAgenda(e, comData)).join('');
+  const livre = card.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+              - palco.querySelector('.ag-topo').offsetHeight - palco.querySelector('.ag-tab thead').offsetHeight - 14;
+  AG_PAGINAS = [];
+  let ini = 0, soma = 0;
+  Array.from(tb.rows).forEach((tr, i) => {
+    const hRow = tr.offsetHeight;
+    if (soma + hRow > livre && i > ini) { AG_PAGINAS.push([ini, i]); ini = i; soma = 0; }
+    soma += hRow;
+  });
+  AG_PAGINAS.push([ini, AG_LISTA.length]);
+  paginaAgenda(0);
+  return AG_PAGINAS.length;
+}
+
+function paginaAgenda(p){
+  const tb = palco.querySelector('.ag-tab tbody');
+  if (!tb) return;
+  const pg = AG_PAGINAS[p] || AG_PAGINAS[0];
+  const comData = AG_MODO === 'atrasados';
+  tb.innerHTML = AG_LISTA.slice(pg[0], pg[1]).map(e => linhaAgenda(e, comData)).join('');
+}
+
+/* ---------- rodízio ---------- */
+function iniciarSlide(i){
+  if (NOVOS) { DADOS = NOVOS; NOVOS = null; }
+  const novas = calcularAbas();
+  if (novas.join('|') !== ABAS.join('|')) {
+    const atual = ABAS[i % (ABAS.length || 1)];
+    ABAS = novas;
+    montarRota();
+    const achou = ABAS.indexOf(atual);
+    if (achou >= 0) i = achou;
+  }
+  const n = ABAS.length;
+  slideIdx = ((i % n) + n) % n;
+  const id = ABAS[slideIdx];
+  pagIdx = 0;
+  if (id === 'AGENDA') { AG_DIA = null; AG_MODO = 'dia'; }
+  aplicarTema(id === 'AGENDA');
+  document.body.classList.toggle('secao-agenda', SECAO === 'AGENDA');   // antes de desenhar, para medir a altura certa
+  cabecalho(id);
+  palco.scrollTop = 0;
+  if (id === 'RESUMO') setTimeout(reajustarTela, 800);
+  totalPags = id === 'RESUMO' ? (renderResumo(), 1) : id === 'AGENDA' ? prepararAgenda() : prepararGrupo(id);
+  durPag = Math.max(CFG.paginaMinSeg * 1000, CFG.tempoPorAbaSeg * 1000 / totalPags);
+  inicioSlide = Date.now();
+  rodapePaginas();
+  atualizarMenu();
+  atualizarStatus();
+  animar();
+  const rota = $('rota');
+  rota.classList.add('sem-trans');
+  atualizarRota();
+  requestAnimationFrame(() => requestAnimationFrame(() => rota.classList.remove('sem-trans')));
+}
+
+function tick(){
+  if (!iniciado) return;
+  const pagDevida = Math.floor((Date.now() - inicioSlide) / durPag);
+  if (pagDevida >= totalPags) {
+    // Terminou a aba: vai para a próxima. Depois da última, volta para o Resumo (looping).
+    // Terminou a seção (Grupos ou Agenda): abre a outra, em looping
+    const prox = proximaAba(slideIdx);
+    if (prox <= slideIdx) {
+      const nova = outraSecao();
+      if (nova !== SECAO) abrirSecao(nova, 0); else iniciarSlide(0);
+    } else iniciarSlide(prox);
+    return;
+  }
+  if (pagDevida !== pagIdx) {
+    pagIdx = pagDevida;
+    paginaGrupo(ABAS[slideIdx], pagIdx);
+    rodapePaginas();
+    animar();
+  }
+  atualizarRota();
+}
+
+/* ---------- dados ---------- */
+function atualizarStatus(){
+  const el = $('status');
+  const ref = (NOVOS || DADOS || {}).geradoEm;
+  if (!ref) {
+    el.className = erroCarga ? 'erro' : '';
+    el.textContent = erroCarga ? 'Não consegui ler a planilha: ' + erroCarga + '. Nova tentativa em 1 minuto.' : 'Buscando os dados da planilha…';
+    return;
+  }
+  if (erroCarga) {
+    el.className = 'erro';
+    el.textContent = 'Planilha indisponível agora. Mostrando os dados das ' + fmtHora(ref) + '. Nova tentativa em 5 minutos.';
+  } else {
+    const prox = new Date(new Date(ref).getTime() + CFG.atualizarDadosMin * 60000);
+    el.className = '';
+    const ag = (DADOS && DADOS.agendaEm) || ref;
+    el.textContent = SECAO === 'AGENDA'
+      ? 'Agenda atualizada às ' + fmtHora(ag) + '. Próxima às ' + fmtHora(new Date(new Date(ag).getTime() + (CFG.atualizarAgendaMin || 10) * 60000)) + '.'
+      : 'Atualizado às ' + fmtHora(ref) + '. Próxima atualização às ' + fmtHora(prox) + '.';
+  }
+}
+
+function carregar(){
+  clearTimeout(tentativa);
+  google.script.run
+    .withSuccessHandler(d => {
+      erroCarga = null;
+      if (!iniciado) { DADOS = d; iniciado = true; iniciarSlide(0); }
+      else NOVOS = d;   // entra na próxima troca de aba, sem cortar a tela atual
+      atualizarStatus();
+    })
+    .withFailureHandler(e => {
+      erroCarga = (e && e.message) || String(e);
+      atualizarStatus();
+      if (!iniciado) palco.innerHTML = mensagem('Não consegui ler a planilha. Confira o ID no CONFIG e se a conta que publicou o script tem acesso a ela.', true);
+      tentativa = setTimeout(carregar, (iniciado ? 5 : 1) * 60000);
+    })
+    .getDashboardData();
+}
+
+/* Agenda a cada 10 minutos: troca os eventos e redesenha a tela da agenda, sem reiniciar o tempo */
+function carregarAgenda(){
+  if (!iniciado) return;
+  google.script.run
+    .withSuccessHandler(d => {
+      if (!d || !d.agenda) return;
+      DADOS.agenda = d.agenda; DADOS.agendaEm = d.agendaEm;
+      if (NOVOS) { NOVOS.agenda = d.agenda; NOVOS.agendaEm = d.agendaEm; }
+      if (ABAS[slideIdx] === 'AGENDA') {
+        const decorrido = Date.now() - inicioSlide;
+        cabecalho('AGENDA');
+        totalPags = prepararAgenda();
+        durPag = Math.max(CFG.paginaMinSeg * 1000, CFG.tempoPorAbaSeg * 1000 / totalPags);
+        inicioSlide = Date.now() - Math.min(decorrido, durPag * totalPags - 1000);
+        pagIdx = Math.min(totalPags - 1, Math.floor((Date.now() - inicioSlide) / durPag));
+        paginaAgenda(pagIdx);
+        rodapePaginas();
+      }
+      atualizarStatus();
+    })
+    .withFailureHandler(() => {})
+    .getAgendaData();
+}
+
+/* ---------- início ---------- */
+montarLogo();
+montarMenu();
+relogio();
+palco.innerHTML = mensagem('Preparando o painel de embarques…');
+setInterval(relogio, 10000);
+setInterval(tick, 500);
+setInterval(carregar, CFG.atualizarDadosMin * 60000);
+setInterval(carregarAgenda, (CFG.atualizarAgendaMin || 10) * 60000);
+carregar();
+
+// Setas do teclado/controle avançam ou voltam as abas
+document.addEventListener('keydown', e => {
+  if (!iniciado) return;
+  if (e.key === 'ArrowRight') iniciarSlide(slideIdx + 1);
+  if (e.key === 'ArrowLeft') iniciarSlide(slideIdx - 1);
+});
+
+// Se a tela mudar de tamanho, recalcula a paginação da aba atual
+let redim;
+window.addEventListener('resize', () => {
+  clearTimeout(redim);
+  redim = setTimeout(() => { if (iniciado) iniciarSlide(slideIdx); }, 600);
+});
+</script>
+</body>
+</html>
